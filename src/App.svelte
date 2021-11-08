@@ -4,6 +4,9 @@
   import Tabs from "./shared/Tabs.svelte"
   import CreatePollForm from "./components/CreatePollForm.svelte"
   import PollList from "./components/PollList.svelte"
+  import { tweened } from 'svelte/motion'
+
+  const value = tweened(0)
 
   // tabs //
   let items = ['Current Polls', 'Add New Poll']
@@ -12,29 +15,11 @@
   const tabChange = e => activeItem = e.detail
 
   const handleAdd = e => {
-    polls = [e.detail, ...polls]
-    console.log(polls)
     activeItem = 'Current Polls'
   }
 
-  const handleVote = e => {
-    // get data that was passed from child component
-    const { id, option } = e.detail
-    // make copy of the data to update it
-    let copiedPolls = [...polls] 
-    // find relevant poll to update
-    let upvotedPoll = copiedPolls.find(poll => poll.id === id)
-    // change the data on that poll 
-    if (option === 'a') {
-      upvotedPoll.votesA++
-    } else if (option === 'b') {
-      upvotedPoll.votesB++
-    }
-    // update the original votes array to reassign
-    polls = copiedPolls
-  }
-
 </script>
+
 
 <Header />
 <main>
@@ -43,7 +28,7 @@
     on:tabChange={tabChange}
   />
   {#if activeItem === 'Current Polls'}
-    <PollList on:vote={handleVote} />
+    <PollList />
   {:else if activeItem === 'Add New Poll'}
     <CreatePollForm on:add={handleAdd} />
   {/if}

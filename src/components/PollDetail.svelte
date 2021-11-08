@@ -1,19 +1,44 @@
 <script>
-  import { createEventDispatcher } from "svelte"
+  import PollStore from "../stores/PollStore.js"
   import Card from "../shared/Card.svelte"
+  import Button from "../shared/Button.svelte"
+  import { tweened } from "svelte/motion"
   export let poll
-
-  const dispatch = createEventDispatcher()
 
   // reactive values 
   $: totalVotes = poll.votesA + poll.votesB
-  $: percentA = Math.floor(100 / totalVotes * poll.votesA)
-  $: percentB = Math.floor(100 / totalVotes * poll.votesB)
+  $: percentA = Math.floor(100 / totalVotes * poll.votesA) || 0
+  $: percentB = Math.floor(100 / totalVotes * poll.votesB) || 0
+
+  // tweened percentages
+  const tweenedA = tweened(0)
+  const tweenedB = tweened(0)
+  $: tweenedA.set(percentA)
+  $: tweenedB.set(percentB)
+
 
   // handling votes 
-  // dispatch a custom event as we want to send data up to the parent component i.e. App
   const handleVote = (option, id) => {
-    dispatch('vote', { option, id })
+    // update the store 
+    PollStore.update(currentPolls => {
+      // make copy of the data to update it
+      let copiedPolls = [...currentPolls] 
+      // find relevant poll to update
+      let upvotedPoll = copiedPolls.find(poll => poll.id === id)
+      // change the data on that poll 
+      if (option === 'a') {
+        upvotedPoll.votesA++
+      } else if (option === 'b') {
+        upvotedPoll.votesB++
+      }
+      return copiedPolls
+    })
+  }
+  // Deleting a poll 
+  const handleDelete = (id) => {
+    PollStore.update(currentPolls => {
+      return currentPolls.filter(poll => poll.id !== id)
+    })
   }
 </script>
 
@@ -22,12 +47,17 @@
     <h3>{poll.question}</h3>
     <p>Total votes: {totalVotes}</p>
     <div class='answer' on:click={() => handleVote('a', poll.id)}>
-      <div class='percent percent-a' style='width: {percentA}%'></div>
+      <div class='percent percent-a' style='width: {$tweenedA}%'></div>
       <span>{poll.answerA} ({poll.votesA})</span>
     </div>
     <div class='answer' on:click={() => handleVote('b', poll.id)}>
-      <div class='percent percent-b' style='width: {percentB}%'></div>
+      <div class='percent percent-b' style='width: {$tweenedB}%'></div>
       <span>{poll.answerB} ({poll.votesB})</span>
+    </div>
+    <div class='delete'>
+      <Button flat={true} on:click={() => handleDelete(poll.id)}>
+        Delete
+      </Button>
     </div>
   </div>
 </Card>
@@ -68,5 +98,9 @@
   .percent-b {
     background: rgba(69, 196, 150, 0.2);
     border-left: 4px solid rgba(69, 196, 150, 1);
+  }
+  .delete {
+    margin-top: 30px;
+    text-align: center;
   }
 </style>
